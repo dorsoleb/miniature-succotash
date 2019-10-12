@@ -20,73 +20,45 @@ def find(pattern, path):
                 result.append(os.path.join(root, name))
     return result
 
+class CreepImage(object):
+
+    def __init__(self, img_path, file_name, deep_search):
+        self.img_path = img_path
+        self.file_name = file_name
+        self.deep_search = deep_search
+        self.template_path = img_path + file_name
+
+        self.cvimage = Cvimage(self.template_path)
 
 def main():
-    #im=ImageGrab.grab(bbox=(0,0, 1290, 1003)) # X1,Y1,X2,Y2
-    #im.show()
-#    import time 
-    #f x in range(30):
-        
-     #   im=ImageGrab.grab(bbox=(0,0, 1290, 1003)) # X1,Y1,X2,Y2
-       # img_name = 'test_save_'+str(x)
-      #  img_format = img_name+'.png'
-        #im.save(img_format)
-        #time.sleep(1)
-
 
     img_path = current_path + '\\img\\' + '\\kor_template\\'
     test_gameplay = current_path + '\\img\\' + '\\kor_template\\' + '\\test_like_vid\\'
     hui_list = find('*.png', test_gameplay)
-    #print(new_list)
-    #print(sorted(hui_list))
-    #exit()
-
-
-#    for image_path in hui_list:
-#        opened_img = Cvimage(image_path)
-#
-#        cv2.imshow('Detected', opened_img.img)
-#        cv2.waitKey()
-#    print(hui_list)
     search_in_img_filename = 'test_img.jpg'
     search_in_img_path = img_path + search_in_img_filename 
 
-    template_name = 'creep1.png'
-    template_path = img_path + template_name
+    deep_search1 = {'top_flip': 0.71, 'top': 0.7, 'bot_flip': 0.6, 'bot': 0.6}
+    creep1 = CreepImage(img_path, 'creep1.png', deep_search1)
 
-    find_in_img = Cvimage(search_in_img_path)
-    #img_rgb = find_in_img.get_img()
-    #img_gray = find_in_img.get_img(gray=True) 
+    deep_search2 = {'top_flip': 0.80, 'top': 0.7, 'bot_flip': 0.80, 'bot': 0.75}
+    creep2 = CreepImage(img_path, 'creep2.png', deep_search2)
 
+    deep_search3 = {'top_flip': 0.71, 'top': 0.7, 'bot_flip': 0.7, 'bot': 0.6}
+    creep3 = CreepImage(img_path, 'creep3.png', deep_search3)
 
-    template_base = Cvimage(template_path)
-    #template_img = template_base.get_img(gray=True)
-    #template = template_base.make_flip() 
-    #import ipdb; ipdb.set_trace()
-    #temp_gray_img = template_base.get_gray_img()
-    #top, bot = template_base.half_crop_img(temp_gray_img)
-    
-    #template_base.show_img(template_base.img)
-
-    #find_in_img.find_by_template(template, debug=True)
+    deep_search4 = {'top_flip': 0.71, 'top': 0.7, 'bot_flip': 0.7, 'bot': 0.6}
+    creep4 = CreepImage(img_path, 'creep4.png', deep_search4)
+#    template_base = Cvimage(template_path)
+#    template_base2 = Cvimage(template_path2)
+#    template_base3 = Cvimage(template_path3)
+#
     for find_in_img_path in hui_list:
         find_in_img = Cvimage(find_in_img_path)
-        find_in_img.find_by_template(template_base, debug=True)
-#    w, h = template_base.get_shape() 
-#    res = cv2.matchTemplate(img_gray, template, cv2.TM_CCOEFF_NORMED) 
-#    threshold = 0.7
-#    loc = np.where( res >= threshold) 
-#
-#    #import ipdb; ipdb.set_trace()
-#    for pt in zip(*loc[::-1]): 
-#        cv2.rectangle(img_rgb, pt, (pt[0] + w, pt[1] + h), (168, 64, 165), 2)
-#        
-#    cv2.imshow('Detected', img_rgb)
-#    cv2.waitKey()
-#    import ipdb; ipdb.set_trace()
-
-
- #   template = cv2.imread("2019-07-02_06-55_1.png", cv2.IMREAD_GRAYSCALE)
+        find_in_img.find_by_template(creep1.cvimage, creep1.deep_search, debug=True)
+        find_in_img.find_by_template(creep2.cvimage, creep2.deep_search, debug=True)
+        find_in_img.find_by_template(creep3.cvimage, creep3.deep_search, debug=True)
+        find_in_img.find_by_template(creep4.cvimage, creep4.deep_search, debug=True)
 
 if __name__ == "__main__":
 

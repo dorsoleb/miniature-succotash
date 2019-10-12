@@ -15,6 +15,9 @@ from PIL import ImageGrab, Image
 
 current_path = os.getcwd()
 
+
+
+
 class Cvimage(object):
 #    img_path = None
 #    img = None
@@ -25,7 +28,9 @@ class Cvimage(object):
         self.file_name =  self.img_path.split("\\")[-1]
         self.img = self.get_img()
         self.gray_img = self.get_gray_img()
-        self.top_crop, self.bot_crop = self.half_crop_img(self.gray_img)
+        self.top, self.bot = self.half_crop_img(self.gray_img)
+        self.top_flip = self.get_flip(self.top)
+        self.bot_flip = self.get_flip(self.bot)
 
     def get_img(self, gray=False):
         return cv2.imread(self.img_path, cv2.IMREAD_GRAYSCALE) if gray else cv2.imread(self.img_path) 
@@ -38,11 +43,16 @@ class Cvimage(object):
     def get_flip(self, img):
         return cv2.flip(img, 1)
 
+    def is_match_img(self, res, threshold=0.6):
+        return len(np.where(res >= threshold)[0])
+
     def get_shape(self):
         h, w, *_ = self.img.shape
         return h, w 
     
     def show_img(self, img, description='Show Img func'):
+        #img = img or self.img
+        #ValueError: The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()
         cv2.imshow(description, img) 
         print("Press any key to continue")
         cv2.waitKey(0) 
@@ -66,51 +76,61 @@ class Cvimage(object):
         return cropped_top, cropped_bot
 
 
-    def find_by_template(self, template, debug=False):
-        #template.make_flip()
-        #cv2.imshow('Detected', template.img)
-        #cv2.imshow('Detected', template.img)
+    def find_by_template(self, template, deep_search=None, debug=False):
         #cv2.waitKey()
-        #import ipdb; ipdb.set_trace()
+        img_threshold = 0.70
+        deep_search = deep_search if deep_search is not None else {}
         res = cv2.matchTemplate(self.gray_img, template.gray_img, cv2.TM_CCOEFF_NORMED) 
-        def draw_find(res, self, template, threshold=0.51):
-            #threshold = 0.51
+
+        template_flip = self.get_flip(template.gray_img)
+        res_flip = cv2.matchTemplate(self.gray_img, template_flip, cv2.TM_CCOEFF_NORMED) 
+        def draw_find(res, self, template, threshold=0.5):
             loc = np.where( res >= threshold) 
             if len(loc[0]):
                 w, h = template.get_shape() 
                 for pt in zip(*loc[::-1]): 
-                    cv2.rectangle(self.img, pt, (pt[0] + w, pt[1] + h), (168, 64, 165), 2)
-                    
-                cv2.imshow('Detected', self.img)
+                    image = cv2.rectangle(self.img, pt, (pt[0] + w, pt[1] + h), (168, 64, 165), 2)
+                cv2.imshow(f'{self.file_name}', image)
                 cv2.waitKey(0)
+                cv2.destroyAllWindows()
             else:
-                file_name = template.img_path.split("\\")
-                #print('cant detect => ', file_name[-1])
+                print(f'cant detect {self.file_name} in {template.file_name}| in img => {self.file_name}')
             return bool(len(loc[0]))
 
-        if debug:
-            finded = draw_find(res, self, template)
-            if finded:
-                print('i found by img')
-        loc = np.where( res >= 0.6) 
-        #import ipdb; ipdb.set_trace()
-        if not loc[0]:
+        matched = self.is_match_img(res, img_threshold)
+        #cv2.imshow('hui', template.gray_img)
+        #cv2.waitKey(0)
+        #cv2.imshow('hui', template_flip)
+        #cv2.waitKey(0)
+        #cv2.imshow('hui', self.gray_img)
+        #cv2.waitKey(0)
+        matched_flip = self.is_match_img(res_flip, img_threshold)
+                    
+        if matched:
+            finded = draw_find(res, self, template, img_threshold)
+            print(f'i found by img, threshold => {img_threshold} | in img => {self.file_name}')
+
+        if matched_flip:
+            finded = draw_find(res_flip, self, template, img_threshold)
+            print(f'i found by img_filp and threshold is {img_threshold}| in img => {self.file_name}')
+        if not matched:
             #print('hmm i cant find loc, using crop')
-            res_crop_top = cv2.matchTemplate(self.gray_img, template.top_crop, cv2.TM_CCOEFF_NORMED)
-            res_crop_top_flip = cv2.matchTemplate(self.gray_img, self.get_flip(template.top_crop), cv2.TM_CCOEFF_NORMED)
-            res_crop_bot = cv2.matchTemplate(self.gray_img, template.bot_crop, cv2.TM_CCOEFF_NORMED)
-            res_crop_bot_flip = cv2.matchTemplate(self.gray_img, self.get_flip(template.bot_crop), cv2.TM_CCOEFF_NORMED)
+            my_threshold = 0.60
+            # top and bop half
+            def deep_match(where_search_img, what_search_img, deep_search, file_name):
+                for method, threshold in deep_search.items():
+                    exec(f'data_img = what_search_img.{method}')
+                    what_search = locals()['data_img']
+                    res_crop = cv2.matchTemplate(where_search_img, what_search, cv2.TM_CCOEFF_NORMED)
+
+                    if self.is_match_img(res_crop, threshold): 
+                        draw_find(res_crop, self, template, threshold)
+                        print(f'i found by {method} and threshold is {threshold}|for {template.file_name} in img => {file_name}')
+
+            #import ipdb; ipdb.set_trace()
+            deep_match(self.gray_img, template, deep_search, self.file_name)
             
-            my_threshold = 0.6
-            top = draw_find(res_crop_top, self, template, 0.6)
-            top_flip = draw_find(res_crop_top_flip, self, template, my_threshold)
 
-            bot = draw_find(res_crop_bot, self, template, 0.6)
-            if top:
-                print('i found by top_crop')
-
-            if bot:
-                print('i found by bot_crop')
         return res
 
 
